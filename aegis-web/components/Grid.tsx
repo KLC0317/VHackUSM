@@ -389,7 +389,7 @@ export function Grid() {
                     style={{
                       left: `${(pos.x / MAP_WIDTH) * 100}%`,
                       top: `${(pos.y / MAP_HEIGHT) * 100}%`,
-                      transform: 'translate(-50%, -50%)',
+                      transform: `translate(calc(-50% + ${cellSize / 2}px), calc(-50% + ${cellSize / 2}px))`,
                     }}
                   >
                     {/* First thermal wave - Orange */}
@@ -463,6 +463,7 @@ export function Grid() {
               {/* Aid Drops - Render first (bottom layer) */}
               {aidDrops.map((drop) => {
                 const pos = gridToPixel(drop.x, drop.y, GRID_SIZE)
+                const cellSize = MAP_WIDTH / GRID_SIZE
                 const age = Date.now() - drop.timestamp
                 const opacity = Math.max(0, 1 - (age / 5000))
                 
@@ -473,7 +474,7 @@ export function Grid() {
                     style={{
                       left: `${(pos.x / MAP_WIDTH) * 100}%`,
                       top: `${(pos.y / MAP_HEIGHT) * 100}%`,
-                      transform: 'translate(-50%, -50%)',
+                      transform: `translate(calc(-50% + ${cellSize / 2}px), calc(-50% + ${cellSize / 2}px))`,
                       opacity
                     }}
                     initial={{ scale: 0, y: -50, opacity: 0 }}
@@ -667,8 +668,7 @@ export function Grid() {
                                   }}
                                   className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-400/50 rounded text-red-300 text-xs font-bold transition-colors"
                                   whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                >
+                                  whileTap={{ scale: 0.95 }}                                >
                                   - Drone
                                 </motion.button>
                               )}

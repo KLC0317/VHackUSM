@@ -158,11 +158,6 @@ export default function Home() {
             </div>
           </motion.header>
 
-          {!connected && (
-            <div className="flex-shrink-0 px-8 pt-4">
-              <SetupGuide />
-            </div>
-          )}
 
           {/* Main Content */}
           <div className="flex-1 px-8 py-4 min-h-0 overflow-hidden">

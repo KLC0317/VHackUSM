@@ -38,7 +38,6 @@ export function Terminal() {
         setIsThinking(false);
       }
 
-      // Auto-hide after 8 seconds
       if (isThinking) {
         const timer = setTimeout(() => setIsThinking(false), 8000);
         return () => clearTimeout(timer);
@@ -46,7 +45,43 @@ export function Terminal() {
     }
   }, [agentMessages]);
 
-  const getMessageIcon = (type: string) => {
+  // Filter messages to show only AI actions and important events
+  const filteredMessages = agentMessages.filter((msg) => {
+    const content = msg.content.toLowerCase();
+    
+    // Show agent actions (move, scan, return, drop aid)
+    if (msg.type === "agent_action") return true;
+    
+    // Show tool results for important actions
+    if (msg.type === "tool_result" && msg.tool) {
+      const importantTools = ["move_drone", "thermal_scan", "drop_aid_payload", "return_to_base"];
+      return importantTools.includes(msg.tool);
+    }
+    
+    // Show important agent thoughts (mission status, discoveries, completion)
+    if (msg.type === "agent_thought") {
+      return (
+        content.includes("initializing") ||
+        content.includes("complete") ||
+        content.includes("found") ||
+        content.includes("discovered") ||
+        content.includes("returning") ||
+        content.includes("coverage") ||
+        content.includes("mission") ||
+        content.includes("survivor") ||
+        content.includes("aid drop")
+      );
+    }
+    
+    return false;
+  });
+
+  const getMessageIcon = (type: string, tool?: string) => {
+    if (tool === "move_drone") return "🚁";
+    if (tool === "thermal_scan") return "🔍";
+    if (tool === "drop_aid_payload") return "📦";
+    if (tool === "return_to_base") return "🏠";
+    
     switch (type) {
       case "agent_thought":
         return "💭";
@@ -72,10 +107,15 @@ export function Terminal() {
     }
   };
 
-  const getMessageBadge = (type: string) => {
+  const getMessageBadge = (type: string, tool?: string) => {
+    if (tool === "move_drone") return "MOVE";
+    if (tool === "thermal_scan") return "SCAN";
+    if (tool === "drop_aid_payload") return "AID DROP";
+    if (tool === "return_to_base") return "RETURN";
+    
     switch (type) {
       case "agent_thought":
-        return "REASONING";
+        return "STATUS";
       case "agent_action":
         return "ACTION";
       case "tool_result":
@@ -85,7 +125,12 @@ export function Terminal() {
     }
   };
 
-  const getMessageBadgeColor = (type: string) => {
+  const getMessageBadgeColor = (type: string, tool?: string) => {
+    if (tool === "move_drone") return "bg-blue-500/20 text-blue-300 border-blue-400/50";
+    if (tool === "thermal_scan") return "bg-orange-500/20 text-orange-300 border-orange-400/50";
+    if (tool === "drop_aid_payload") return "bg-red-500/20 text-red-300 border-red-400/50";
+    if (tool === "return_to_base") return "bg-yellow-500/20 text-yellow-300 border-yellow-400/50";
+    
     switch (type) {
       case "agent_thought":
         return "bg-cyan-500/20 text-cyan-300 border-cyan-400/50";
@@ -104,7 +149,6 @@ export function Terminal() {
       <div className="flex-shrink-0 bg-gradient-to-r from-slate-950/60 via-slate-900/60 to-slate-950/60 px-4 py-3 border-b border-slate-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Terminal Dots */}
             <div className="flex gap-1.5">
               <motion.div
                 className="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50"
@@ -120,7 +164,6 @@ export function Terminal() {
               />
             </div>
 
-            {/* Terminal Title */}
             <div className="flex items-center gap-2">
               <span className="text-green-400 text-sm font-mono font-bold">
                 aegis@ai
@@ -133,7 +176,6 @@ export function Terminal() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Thinking Indicator */}
             <AnimatePresence>
               {isThinking && (
                 <motion.div
@@ -157,10 +199,9 @@ export function Terminal() {
               )}
             </AnimatePresence>
 
-            {/* Message Count */}
             <div className="px-2 py-1 bg-slate-800/50 rounded border border-slate-700/50">
               <span className="text-xs text-slate-400 font-mono">
-                {agentMessages.length} logs
+                {filteredMessages.length} actions
               </span>
             </div>
           </div>
@@ -176,7 +217,7 @@ export function Terminal() {
           scrollbarColor: "rgba(34, 197, 94, 0.3) transparent",
         }}
       >
-        {agentMessages.length === 0 ? (
+        {filteredMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <motion.div
@@ -205,7 +246,7 @@ export function Terminal() {
         ) : (
           <>
             <AnimatePresence initial={false}>
-              {agentMessages.map((msg, idx) => (
+              {filteredMessages.map((msg, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, x: -20, y: 10 }}
@@ -215,30 +256,23 @@ export function Terminal() {
                   className="group bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-xl p-4 hover:bg-slate-800/40 hover:border-slate-600/50 transition-all cursor-default"
                 >
                   <div className="flex items-start gap-3">
-                    {/* Icon */}
                     <motion.div
                       className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-900/50 border border-slate-700/50 flex items-center justify-center"
                       whileHover={{ scale: 1.1, rotate: 5 }}
                     >
                       <span className="text-lg">
-                        {getMessageIcon(msg.type)}
+                        {getMessageIcon(msg.type, msg.tool)}
                       </span>
                     </motion.div>
 
                     <div className="flex-1 min-w-0">
-                      {/* Header */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`px-2 py-0.5 rounded border text-xs font-bold ${getMessageBadgeColor(msg.type)}`}
+                            className={`px-2 py-0.5 rounded border text-xs font-bold ${getMessageBadgeColor(msg.type, msg.tool)}`}
                           >
-                            {getMessageBadge(msg.type)}
+                            {getMessageBadge(msg.type, msg.tool)}
                           </span>
-                          {msg.tool && (
-                            <span className="px-2 py-0.5 bg-slate-700/30 border border-slate-600/30 rounded text-xs text-slate-400 font-mono">
-                              {msg.tool}
-                            </span>
-                          )}
                         </div>
                         <span className="text-slate-500 text-xs font-mono">
                           {new Date(msg.timestamp).toLocaleTimeString("en-US", {
@@ -250,7 +284,6 @@ export function Terminal() {
                         </span>
                       </div>
 
-                      {/* Content */}
                       <div
                         className={`${getMessageColor(msg.type)} leading-relaxed break-words`}
                       >
@@ -271,7 +304,6 @@ export function Terminal() {
                   exit={{ opacity: 0, y: -20, scale: 0.95 }}
                   className="relative overflow-hidden bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-sm border border-cyan-400/40 rounded-xl p-5 shadow-lg"
                 >
-                  {/* Animated Background Gradient */}
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-pink-500/5"
                     animate={{
@@ -285,7 +317,6 @@ export function Terminal() {
                   />
 
                   <div className="relative flex items-center gap-4">
-                    {/* Spinner */}
                     <div className="relative flex-shrink-0">
                       <motion.div
                         className="w-12 h-12 rounded-full border-2 border-cyan-400/20"
@@ -318,7 +349,6 @@ export function Terminal() {
                       </div>
                     </div>
 
-                    {/* Text */}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-cyan-300 font-bold text-base">
@@ -346,7 +376,6 @@ export function Terminal() {
                         {thinkingMessage}
                       </div>
 
-                      {/* Progress Bar */}
                       <div className="mt-3 h-1 bg-slate-800/50 rounded-full overflow-hidden">
                         <motion.div
                           className="h-full bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400"
